@@ -15,7 +15,7 @@ let door;
     // roughness: 0.2
 // });
 
-loader.load("../合1.glb", function (gltf) {
+loader.load("./合1.glb", function (gltf) {
     // model.scale.set(10, 10, 10);
     model.add(gltf.scene);
 
