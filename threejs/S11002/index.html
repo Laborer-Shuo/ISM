@@ -24,13 +24,22 @@
         <button id="stopRotate">停止旋转</button>
     </div>
 
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "../three.js-master/build/three.module.js",
+                "three/addons/": "../three.js-master/examples/jsm/"
+            }
+        }
+    </script>
+
     <script type="module">
-            import * as THREE from '../three.js-master/build/three.module.js';
-            import { OrbitControls } from '../three.js-master/examples/jsm/controls/OrbitControls.js';
-            import { EffectComposer } from '../three.js-master/examples/jsm/postprocessing/EffectComposer.js';
-            import { RenderPass } from '../three.js-master/examples/jsm/postprocessing/RenderPass.js';
-            import { OutlinePass } from '../three.js-master/examples/jsm/postprocessing/OutlinePass.js';
-            import { GLTFLoader } from '../three.js-master/examples/jsm/loaders/GLTFLoader.js';
+            import * as THREE from 'three';
+            import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+            import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+            import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+            import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+            import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
 
