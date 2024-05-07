@@ -56,7 +56,7 @@
         //渲染器和相机
         const width = window.innerWidth;
         const height = window.innerHeight;
-        const camera = new THREE.PerspectiveCamera(60, width / height, 1, 1000);
+        const camera = new THREE.PerspectiveCamera(60, width / height, 1, 3000);
         // camera.position.set(3, 3, 3);
         // camera.lookAt(0, 0, 0);
 
@@ -73,49 +73,48 @@
         renderer.setClearColor(0xFAD7A0, 1);
         document.body.appendChild(renderer.domElement);
 
-
+        
         // 加载 GLTF 模型  
         const loader = new GLTFLoader();
         loader.load('./合1.glb', function (gltf) {
             const model = gltf.scene;
             scene.add(model);
+            var boundingBox = new THREE.Box3().setFromObject(model);
+            var center = boundingBox.getCenter(new THREE.Vector3());
+            var size = boundingBox.getSize(new THREE.Vector3());
+            var distance = Math.max(size.x, size.y, size.z) * 3; // 乘以2使模型占窗口的一半大小
+            var fov = camera.fov * (Math.PI / 180);
+            var aspect = window.innerWidth / window.innerHeight;
+            var cameraZ = Math.abs((distance / 2) / Math.tan(fov / 2));
 
-            // 计算边界框并调整模型和相机
-            adjustModelAndCamera(model, camera);
+            // 设置相机位置和焦点
+            camera.position.set(center.x, center.y, cameraZ);
+            camera.lookAt(center);
+
+            // 初始化 OrbitControls
+            const controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(center.x, center.y, center.z); // 设置控制的焦点为模型中心
+            controls.update(); // 必须调用 update() 以确保控制器状态的正确性
 
             // 渲染场景
             renderer.render(scene, camera);
-        });
 
-        function adjustModelAndCamera(model, camera) {
-            const bbox = new THREE.Box3().setFromObject(model);
-            const center = bbox.getCenter(new THREE.Vector3());
-            const size = bbox.getSize(new THREE.Vector3());
-            const maxDim = Math.max(size.x, size.y, size.z);
-            const desiredSize = 2; // 相对于视口的大小比例（可以调整）
-            const scale = desiredSize / maxDim;
-            model.scale.set(scale, scale, scale);
-
-            // 调整相机距离以适应模型
-            const fov = camera.fov * (Math.PI / 180);
-            camera.position.x= Math.abs(maxDim * scale) / 2 / Math.tan(fov / 2);
-            camera.position.y= Math.abs(maxDim * scale) / 2 / Math.tan(fov / 2);
-            camera.position.z= Math.abs(maxDim * scale) / 2 / Math.tan(fov / 2);
-          
+            // 监听模型加载完成事件，重新计算相机位置和焦点
+            model.traverse(function (child) {
+                if (child.isMesh) {
+                    child.geometry.computeBoundingBox();
+                }
+            });
             
-
-            // 更新相机投影矩阵
-            camera.updateProjectionMatrix();
-            camera.lookAt(center);
-            renderer.render(scene, camera);
-        };
+        });
 
         // 窗口大小变化时更新渲染器和相机
         window.addEventListener('resize', function () {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            var width = window.innerWidth;
+            var height = window.innerHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.render(scene, camera);
         });
 
         // 渲染循环
@@ -125,8 +124,6 @@
         }
         render();
 
-
-        const controls = new OrbitControls(camera, renderer.domElement);
 
         // 画布跟随窗口变化
         window.onresize = function () {
