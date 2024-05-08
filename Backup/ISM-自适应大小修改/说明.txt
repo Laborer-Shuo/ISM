@@ -1,0 +1,30 @@
+1、修改views中的index.html，在Head中加入
+
+document.write(
+    '<script type="importmap">                                              \
+    {                                                                       \
+        "imports": {                                                        \
+            "three": "./static/plugins/js/threejs/build/three.module.js",   \
+            "three/addons/": "./static/plugins/js/threejs/examples/jsm/"    \
+        }                                                                   \
+    }                                                                       \
+    </script>                                                               \
+    <script type="module">                                                  \
+        import * as THREE from "three";                                     \
+        window.THREE = THREE;                                               \
+    </script>');
+document.write(
+    '<script type="module">                                                 \
+         import * as MY from "./static/plugins/myjs.js";                    \
+         window.MY = MY;                                                    \
+     </script>');
+document.write('<script src="./static/plugins/addon.js"></script>');
+
+2、修改static\js\app.xxxxx.js，在顶部加入
+     document.write("<script type='module'>                                 \
+                    import * as MY from './static/plugins/myscript.js';\
+                    window.MY = MY;                                    \
+                </script> ");
+
+3、在需要添加js的页面中加入自定义图表
+	MY.test();
