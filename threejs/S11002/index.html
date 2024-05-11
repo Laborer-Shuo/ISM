@@ -13,6 +13,14 @@
         .mainContent {
             text-align: center;
         }
+
+        #infoLabel {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-align: center;
+        width: 120px;
+        transition: opacity 0.4s;
+      }
     </style>
 </head>
 
@@ -24,6 +32,18 @@
         <button id="stopRotate">停止旋转</button>
     </div>
 
+    <div
+      id="infoLabel"
+      style="
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: white;
+        padding: 5px;
+        display: none;
+      "
+    ></div>
+    
     <script type="importmap">
         {
             "imports": {
@@ -228,20 +248,53 @@
 
 
         // 点击放大物体子模块
-        window.addEventListener('click', function (event) {
+        // window.addEventListener('click', function (event) {
+        //     event.preventDefault();
+        //     raycaster.setFromCamera(mouse, camera);
+        //     const intersects = raycaster.intersectObject(model, true);
+        //     if (intersects.length > 0) {
+        //         const target = intersects[0].object;
+        //         const newTargetPos = target.getWorldPosition(new THREE.Vector3());
+        //         const zoomPosition = newTargetPos.clone().add(new THREE.Vector3(0, 0, 5));
+        //         camera.position.lerp(zoomPosition, 0.5);
+        //         controls.target.copy(newTargetPos);
+        //         controls.update();
+        //     }
+        // });
+
+        // 点击瓶体显示数字
+        document.addEventListener("click", function (event) {
             event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(model, true);
+    
             if (intersects.length > 0) {
-                const target = intersects[0].object;
-                const newTargetPos = target.getWorldPosition(new THREE.Vector3());
-                const zoomPosition = newTargetPos.clone().add(new THREE.Vector3(0, 0, 5));
-                camera.position.lerp(zoomPosition, 0.5);
-                controls.target.copy(newTargetPos);
-                controls.update();
+              const selectedObject = intersects[0].object;
+              const name = selectedObject.name;
+              // 检查点击的对象名称是否为特定子节点
+              if (
+                name.startsWith("炉_-_瓶-") &&
+                parseInt(name.split("-")[2]) >= 4 &&
+                parseInt(name.split("-")[2]) <= 9
+              ) {
+                outlinePass.selectedObjects = [selectedObject];
+    
+                const label = document.getElementById("infoLabel");
+                label.style.display = "block";
+                label.textContent = name.split("-")[2]; // 提取并显示数字
+                label.style.top = event.clientY + "px";
+                label.style.left = event.clientX + "px";
+              } else {
+                document.getElementById("infoLabel").style.display = "none";
+                outlinePass.selectedObjects = [];
+              }
+            } else {
+              document.getElementById("infoLabel").style.display = "none";
+              outlinePass.selectedObjects = [];
             }
         });
-
 
         // 渲染循环
         function render() {
