@@ -7,11 +7,59 @@
     <style>
         body {
             overflow: hidden;
-            margin: 0px;
+            margin: 0;
         }
 
         .mainContent {
             text-align: center;
+            position: relative;
+            z-index: 1; /* 确保按钮在渲染器上方 */
+            top: 648px;
+            
+        }
+        
+        button {
+            margin: 0px 12px 0px 6px;
+            box-shadow: 0px 0px 15px 3px #062a40;
+	        background:linear-gradient(to bottom, #1f729f33 5%, #083652 100%);
+	        background-color:#083652;
+	        border-radius:42px;
+	        border:3px solid #159AFF;
+	        display:inline-block;
+	        cursor:pointer;
+	        color:#ffffff;
+	        font-family:Arial;
+	        font-size:20px;
+	        padding:10px 24px;
+	        text-decoration:none;
+        }
+
+        button:hover {
+	        background:linear-gradient(to bottom, #083652 5%, #083652 100%);
+	        background-color:#415989;
+        }
+
+        button:active {
+	        position:relative;
+            top:1px;
+        }
+
+
+        .label {
+            color: white;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 2px 5px;
+            border-radius: 3px;
+            position: absolute;
+            transform: translate(-50%, -50%);
+        }
+
+        canvas,
+        #css3dRenderer {
+            position: absolute;
+            top: 0;
+            left: 0;
         }
     </style>
 </head>
@@ -34,50 +82,53 @@
     </script>
 
     <script type="module">
-            import * as THREE from 'three';
-            import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-            import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-            import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-            import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
-            import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
 
-
-
-        //场景相关
-
-
-
+        // 场景相关
         const scene = new THREE.Scene();
 
+        // 辅助观察的坐标系
+        // const axesHelper = new THREE.AxesHelper(100);
+        // scene.add(axesHelper);
 
-
-
-        //辅助观察的坐标系
-        const axesHelper = new THREE.AxesHelper(100);
-        scene.add(axesHelper);
-
-        //光源设置
+        // 光源设置
         const directionalLight = new THREE.DirectionalLight(0xffffff, 5);
         directionalLight.position.set(200, 200, 200);
         scene.add(directionalLight);
+        directionalLight.position.set( 300, 300, 300 );
         const ambient = new THREE.AmbientLight(0xffffff, 1);
         scene.add(ambient);
 
-
-        //渲染器和相机
+        // 渲染器和相机
         const width = window.innerWidth;
         const height = window.innerHeight;
         const camera = new THREE.PerspectiveCamera(60, width / height, 1, 1000);
-        camera.position.set(10, 10, 10);
+        camera.position.set(8, 5, 8);
         camera.lookAt(0, 0, 0);
+       
 
-        const renderer = new THREE.WebGLRenderer();
+        const renderer = new THREE.WebGLRenderer({ alpha: true });
         renderer.setSize(width, height);
-        //canvas画布背景颜色
-        //第二个参数是alpha通道（不透明）
-        renderer.setClearColor(0xFAD7A0, 1);
+        renderer.setClearColor(0x000000, 0);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.top = 0;
+        renderer.domElement.style.left = 0;
         document.body.appendChild(renderer.domElement);
 
+        // 新增 CSS3DRenderer
+        const cssRenderer = new CSS3DRenderer();
+        cssRenderer.setSize(window.innerWidth, window.innerHeight);
+        cssRenderer.domElement.style.position = 'absolute';
+        cssRenderer.domElement.style.top = 0;
+        cssRenderer.domElement.style.left = 0;
+        cssRenderer.domElement.style.pointerEvents = 'none'; // 确保 CSS3DRenderer 不会阻止鼠标事件
+        document.body.appendChild(cssRenderer.domElement);
 
         const composer = new EffectComposer(renderer);
         const renderPass = new RenderPass(scene, camera);
@@ -91,73 +142,40 @@
         outlinePass.hiddenEdgeColor.set('#190a05');
         composer.addPass(outlinePass);
 
-
-        //解决加载gltf格式模型颜色偏差问题
-        // renderer.outputColorSpace = THREE.SRGBColorSpace;//设置为SRGB颜色空间
-
+        // 使 OrbitControls 控制两个渲染器
         const controls = new OrbitControls(camera, renderer.domElement);
-        // controls.target.set(0, 0, 0);
+        controls.target.set(0, 2.5, 0);
+        controls.addEventListener('change', () => {
+            renderer.render(scene, camera);
+            cssRenderer.render(scene, camera);
+        });
         controls.update();
 
-
-
-        //模型相关
-
-
-        const loader = new GLTFLoader(); //创建一个GLTF加载器
-        const model = new THREE.Group(); //声明一个组对象，用来添加加载成功的三维场景
-        // const group = new THREE.Group(); //创建一个组对象
+        // 模型相关
+        const loader = new GLTFLoader(); // 创建一个GLTF加载器
+        const model = new THREE.Group(); // 声明一个组对象，用来添加加载成功的三维场景
         let door;
-        // 创建新材质
-        // const newMaterial = new THREE.MeshStandardMaterial({
-        // color: 0x00ff00,
-        // metalness: 0.9,
-        // roughness: 0.2
-        // });
 
-        loader.load("https://laborer-shuo.github.io/ISM/threejs/合1.glb", function (gltf) {
-            // model.scale.set(10, 10, 10);
+        loader.load("https://laborer-shuo.github.io/ISM/threejs/model1.glb", function (gltf) {
             model.add(gltf.scene);
 
-            // 计算模型的包围盒
-            // const box = new THREE.Box3().setFromObject(model);
-            // 计算包围盒的中心
-            // const center = new THREE.Vector3();
-            // box.getCenter(center);
-            // 调整模型位置，使包围盒中心对齐到组的原点
-            // model.position.sub(center);
-            // group.add(model); // 将调整后的模型添加到组中
-
-
             model.traverse(function (child) {
-                if (child.name === "炉_-_炉门-1") {
+                if (child.name === "炉门") {
                     door = child;
                 }
-                // 改变模型每部分材质
-                // if (child instanceof THREE.Mesh) {
-                // child.material = newMaterial;
-                // }
-                //遍历打印子节点名
-                // console.log(child.name);
             });
-        })
-        scene.add(model); //模型对象添加到场景中
+        });
+        scene.add(model); // 模型对象添加到场景中
 
-
-
-        //功能实现
-
-
-
+        // 功能实现
         // 开关门逻辑实现
         let doorOpen = true; // 门当前是否打开
         function toggleDoor() {
             if (door) {
-                door.position.y += doorOpen ? -3 : 3; // 切换门的位置
+                door.position.y += doorOpen ? -2.8 : 2.8; // 切换门的位置
                 doorOpen = !doorOpen; // 切换门状态
             }
         }
-
 
         // 绑定开关门按钮事件
         document.getElementById('openDoor').addEventListener('click', function () {
@@ -172,13 +190,12 @@
             }
         });
 
-
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         // 控制旋转的状态标志
-        let isRotating = false;
-        let allowRotation = false;
-
+        let isRotating = true; // 默认旋转
+        let allowRotation = true;
+        let currentLabel = null;
 
         let INTERSECTED;
         function onMouseMove(event) {
@@ -209,7 +226,6 @@
 
         window.addEventListener('mousemove', onMouseMove, false);
 
-
         // 添加鼠标事件监听
         document.getElementById('startRotate').addEventListener('click', function () {
             allowRotation = true;
@@ -219,52 +235,106 @@
             allowRotation = false;
             isRotating = false;
         });
-        // renderer.domElement.addEventListener('mousedown', function () {
-        //     isRotating = false; // 当鼠标按下时停止旋转
-        // });
-        // renderer.domElement.addEventListener('mouseup', function () {
-        //     isRotating = true; // 当鼠标松开时继续旋转
-        // });
 
-
-        // 点击放大物体子模块
-        window.addEventListener('click', function (event) {
+  // 点击瓶体显示数字
+        document.addEventListener("click", function (event) {
             event.preventDefault();
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(model, true);
+
             if (intersects.length > 0) {
-                const target = intersects[0].object;
-                const newTargetPos = target.getWorldPosition(new THREE.Vector3());
-                const zoomPosition = newTargetPos.clone().add(new THREE.Vector3(0, 0, 5));
-                camera.position.lerp(zoomPosition, 0.5);
-                controls.target.copy(newTargetPos);
-                controls.update();
+                const selectedObject = intersects[0].object;
+                const name = selectedObject.name;
+                // 检查点击的对象名称是否为特定子节点
+                if (
+                    name.startsWith("气瓶") &&
+                    parseInt(name.split("-")[2]) >= 4 &&
+                    parseInt(name.split("-")[2]) <= 9
+                ) {
+                    outlinePass.selectedObjects = [selectedObject];
+
+                    // 删除所有现有的标签
+                    if (currentLabel) {
+                        scene.traverse(function (child) {
+                            if (child instanceof CSS3DObject) {
+                                child.parent.remove(child);
+                            }
+                        });
+                        currentLabel = null;
+                    }
+
+                    // 创建新的标签
+                   
+                    // const labelContent = name.split("-")[2];
+                    const labelContent = `${name}`; //标签内容
+                    const label = createCSS3DObject(labelContent);
+                    selectedObject.add(label); // 将标签添加到选中的对象上，使其跟随对象旋转
+                    currentLabel = label; // 记录当前标签
+                } else {
+                    // 如果点击的不是目标对象，隐藏所有标签
+                    if (currentLabel) {
+                        scene.traverse(function (child) {
+                            if (child instanceof CSS3DObject) {
+                                child.parent.remove(child);
+                            }
+                        });
+                        currentLabel = null;
+                    }
+                    outlinePass.selectedObjects = [];
+                }
+            } else {
+                // 如果没有点击到任何对象，隐藏所有标签
+                if (currentLabel) {
+                    scene.traverse(function (child) {
+                        if (child instanceof CSS3DObject) {
+                            child.parent.remove(child);
+                        }
+                    });
+                    currentLabel = null;
+                }
+                outlinePass.selectedObjects = [];
             }
         });
 
+        function createCSS3DObject(content) {
+            const div = document.createElement('div');
+            div.className = 'label';
+            div.textContent = content;
+
+            const css3DObject = new CSS3DObject(div);
+            css3DObject.position.set(5, 1.4, -2); // 将标签位置设置到子对象的上方，便于观察
+            css3DObject.scale.set(0.05, 0.05, 0.05); // 缩小标签
+            css3DObject.rotation.x = -Math.PI/2;// 初始朝向z轴正方向
+            return css3DObject;
+        }
 
         // 渲染循环
         function render() {
-            if (isRotating) {
-                model.rotateY(0.02); // 仅当isRotating为true时旋转模型
-            }
-            // model.rotation.y += 0.01;
-            renderer.render(scene, camera);
             requestAnimationFrame(render);
+            if (isRotating) {
+                model.rotateY(0.01); // 仅当isRotating为true时旋转模型
+            }
+            controls.update();
+            renderer.render(scene, camera);
+            cssRenderer.render(scene, camera);
             composer.render();
         }
         render();
 
-
         // 画布跟随窗口变化
         window.onresize = function () {
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            camera.aspect = window.innerWidth / window.innerHeight;
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            composer.setSize(window.innerWidth, window.innerHeight);
+
+            renderer.setSize(width, height);
+            cssRenderer.setSize(width, height);
+            composer.setSize(width, height);
         };
-
-
     </script>
 </body>
 
